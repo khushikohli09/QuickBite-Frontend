@@ -1,6 +1,7 @@
 import React, { useState, useContext, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { UserContext } from "../context/UserContext";
+import api from "../api"; // ✅ Use api.js
 import "../styles/Auth.css";
 
 const LoginModal = () => {
@@ -12,10 +13,9 @@ const LoginModal = () => {
   const navigate = useNavigate();
   const { user, setUserAndStorage, loading } = useContext(UserContext);
 
-  // ✅ Wait until user is fetched
+  // Redirect if user is already logged in
   useEffect(() => {
     if (!loading && user) {
-      // Redirect based on role
       if (user.role === "admin") navigate("/admin/dashboard");
       else if (user.role === "vendor") navigate("/vendor/dashboard");
       else navigate("/");
@@ -28,29 +28,24 @@ const LoginModal = () => {
     setLoadingLogin(true);
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      const res = await api.post("/auth/login", { email, password });
+      const data = res.data;
 
-      const data = await res.json();
-
-      if (res.ok) {
+      if (res.status === 200) {
         setUserAndStorage(data.user, data.token); // sets user & token
-        // Navigation will automatically happen in useEffect
+        // Navigation handled by useEffect
       } else {
         setError(data.error || "Invalid credentials");
       }
     } catch (err) {
       console.error("Login error:", err);
-      setError("Something went wrong. Please try again.");
+      setError(err.response?.data?.error || "Something went wrong. Please try again.");
     } finally {
       setLoadingLogin(false);
     }
   };
 
-  if (loading) return <p>Loading...</p>; // Wait for UserContext fetchUser to complete
+  if (loading) return <p>Loading...</p>;
 
   return (
     <div className="auth-page">
@@ -66,7 +61,6 @@ const LoginModal = () => {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-
           <input
             type="password"
             placeholder="Password"
@@ -74,7 +68,6 @@ const LoginModal = () => {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-
           <button type="submit" className="auth-btn" disabled={loadingLogin}>
             {loadingLogin ? "Logging in..." : "Login"}
           </button>

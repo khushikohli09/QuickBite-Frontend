@@ -1,6 +1,5 @@
-// src/context/AuthContext.jsx
 import React, { createContext, useState, useEffect } from "react";
-import axios from "axios";
+import api from "../api";  // use api.js
 
 export const AuthContext = createContext();
 
@@ -12,8 +11,8 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
-      axios
-        .get("http://localhost:5000/api/auth/me", {
+      api
+        .get("/auth/me", {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then((res) => setUser(res.data.user))
@@ -26,18 +25,14 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const res = await axios.post("http://localhost:5000/api/auth/login", {
-        email,
-        password,
-      });
-
+      const res = await api.post("/auth/login", { email, password });
       const userData = res.data.user;
       const token = res.data.token;
 
-      localStorage.setItem("token", token); // store token
-      setUser(userData); // update context
+      localStorage.setItem("token", token);
+      setUser(userData);
 
-      return { success: true, user: userData }; // important: return user
+      return { success: true, user: userData };
     } catch (err) {
       setError(err.response?.data?.error || "Login failed");
       return { success: false };

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import api from "../api"; // ✅ Use api.js
 import "../styles/Auth.css";
 
 const SignupModal = () => {
@@ -17,22 +18,18 @@ const SignupModal = () => {
     setSuccess("");
 
     try {
-      const res = await fetch("http://localhost:5000/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, role }),
-      });
+      const res = await api.post("/auth/signup", { name, email, password, role });
+      const data = res.data;
 
-      const data = await res.json();
-      if (res.ok) {
+      if (res.status === 200 || res.status === 201) {
         setSuccess("Signup successful! Redirecting to login...");
         setTimeout(() => navigate("/login"), 1500);
       } else {
-        setError(data.error);
+        setError(data.error || "Signup failed");
       }
     } catch (err) {
       console.error(err);
-      setError("Something went wrong. Please try again.");
+      setError(err.response?.data?.error || "Something went wrong. Please try again.");
     }
   };
 
@@ -63,7 +60,6 @@ const SignupModal = () => {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          {/* Role Selection */}
           <select value={role} onChange={(e) => setRole(e.target.value)} required>
             <option value="USER">User</option>
             <option value="VENDOR">Vendor</option>
